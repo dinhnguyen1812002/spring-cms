@@ -1,9 +1,10 @@
 // components/LandingPageEditor.vue
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import axios from "axios";
+
+import { onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import type { LandingPage } from "../types/LandingPage";
+import { getLandingPage, updateLandingPage } from "../services/PageServices.ts";
 
 const route = useRoute();
 const loading = ref(false);
@@ -20,16 +21,23 @@ const page = ref<LandingPage>({
   cssContent: "",
   jsContent: "",
   template: "",
-  isPublished: false
+  isPublished: false,
+  url: "",
+  createdAt: ""
 });
 
 onMounted(async () => {
+  const slug = route.params.slug as string;
+  if (!slug) {
+    showNotification.value = true;
+    notificationMessage.value = 'Slug is missing in URL';
+    notificationType.value = 'error';
+    return;
+  }
+
   try {
     loading.value = true;
-    const response = await axios.get<LandingPage>(
-      `http://localhost:8080/api/landing-pages/${route.params.slug}`
-    );
-    page.value = response.data;
+    page.value = await getLandingPage(slug); // ✅ truyền slug
   } catch (error) {
     showNotification.value = true;
     notificationMessage.value = 'Failed to load page content';
@@ -41,17 +49,16 @@ onMounted(async () => {
 });
 
 const savePage = async () => {
-  if (!page.value) return;
+  if (!page.value.slug) return;
+
   try {
     loading.value = true;
-    await axios.put(
-      `http://localhost:8080/api/landing-pages/${page.value.id}`,
-      page.value
-    );
+    // ✅ Cập nhật theo slug, không dùng ID
+    await updateLandingPage(page.value.slug, page.value);
     showNotification.value = true;
     notificationMessage.value = 'Page saved successfully';
     notificationType.value = 'success';
-    
+
     setTimeout(() => {
       showNotification.value = false;
     }, 3000);
@@ -65,6 +72,7 @@ const savePage = async () => {
   }
 };
 </script>
+
 
 <template>
   <div class="min-h-screen bg-gray-50">

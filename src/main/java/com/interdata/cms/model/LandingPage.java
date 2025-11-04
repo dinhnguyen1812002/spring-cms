@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+import java.util.Date;
+
 @Entity
 @Table(name = "landing_pages")
 
@@ -26,7 +29,10 @@ public class LandingPage {
     private String jsContent;
 
     private Integer version;
+
     private boolean isPublished;
+    
+    private LocalDateTime createdAt;
 
     public Long getId() {
         return id;
@@ -90,6 +96,19 @@ public class LandingPage {
 
     public void setHtmlContent(String htmlContent) {
         this.htmlContent = htmlContent;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    @PrePersist
+    public void onCreated() {
+        this.createdAt = LocalDateTime.now();
     }
 }
 

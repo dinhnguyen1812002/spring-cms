@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import axios from 'axios';
+import {createLandingPage} from "../services/PageServices.ts";
 
 interface CreateLandingPage {
   name: string;
@@ -11,6 +12,12 @@ interface CreateLandingPage {
   jsContent: string;
   isPublished: boolean;
 }
+
+const sections = {
+  basic: { title: 'Thông tin cơ bản', icon: 'information-circle' },
+  content: { title: 'Nội dung trang', icon: 'document-text' },
+  settings: { title: 'Cài đặt xuất bản', icon: 'cog' }
+};
 
 const formData = ref<CreateLandingPage>({
   name: '',
@@ -25,6 +32,7 @@ const formData = ref<CreateLandingPage>({
 const loading = ref(false);
 const error = ref('');
 const success = ref(false);
+const activeTab = ref('basic');
 
 const createSlug = (name: string): string => {
   return name
@@ -45,7 +53,7 @@ const isFormValid = computed(() => {
 
 const handleSubmit = async () => {
   if (!isFormValid.value) {
-    error.value = 'Please fill in all required fields';
+    error.value = 'Vui lòng điền đầy đủ thông tin bắt buộc';
     return;
   }
 
@@ -54,11 +62,7 @@ const handleSubmit = async () => {
     error.value = '';
     success.value = false;
 
-    const response = await axios.post('http://localhost:8080/api/landing-pages/create', formData.value, {
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    });
+    await createLandingPage(formData.value);
 
     success.value = true;
     formData.value = {
@@ -74,7 +78,7 @@ const handleSubmit = async () => {
     if (axios.isAxiosError(e)) {
       error.value = e.response?.data?.message || e.message;
     } else {
-      error.value = 'An unexpected error occurred';
+      error.value = 'Đã xảy ra lỗi không mong muốn';
     }
   } finally {
     loading.value = false;
@@ -83,28 +87,43 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 py-8">
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-      <!-- Header -->
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">Create Landing Page</h1>
-        <p class="mt-2 text-sm text-gray-600">Fill in the details below to create a new landing page.</p>
+  <div class="min-h-screen bg-gray-100">
+    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-8">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h1 class="text-4xl font-bold">Tạo Landing Page</h1>
+        <p class="mt-2 text-indigo-100">Thiết kế và tạo landing page mới của bạn</p>
+      </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="flex space-x-4 mb-8 border-b">
+        <button
+          v-for="(section, key) in sections"
+          :key="key"
+          @click="activeTab = key"
+          :class="[
+            'px-4 py-2 font-medium text-sm rounded-t-lg transition',
+            activeTab === key
+              ? 'text-indigo-600 border-b-2 border-indigo-600 bg-white'
+              : 'text-gray-500 hover:text-gray-700'
+          ]"
+        >
+          <i :class="'fas fa-' + section.icon" class="mr-2"></i>
+          {{ section.title }}
+        </button>
       </div>
 
-      <form @submit.prevent="handleSubmit" class="bg-white shadow-lg rounded-lg overflow-hidden">
-        <!-- Basic Information Section -->
-        <div class="p-6 border-b border-gray-200">
-          <h2 class="text-xl font-semibold text-gray-800 mb-4">Basic Information</h2>
+      <form @submit.prevent="handleSubmit" class="bg-white rounded-xl shadow-xl">
+        <div v-show="activeTab === 'basic'" class="p-6 space-y-6">
           <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Page Name *</label>
+            <div class="space-y-2">
+              <label class="text-sm font-medium text-gray-700">Tên trang *</label>
               <input
                 v-model="formData.name"
                 @input="handleNameChange"
                 type="text"
-                required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="Enter page name"
+                class="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500"
+                placeholder="Nhập tên trang"
               />
             </div>
             
@@ -132,18 +151,18 @@ const handleSubmit = async () => {
           </div>
         </div>
 
-        <!-- Content Section -->
-        <div class="p-6 border-b border-gray-200">
-          <h2 class="text-xl font-semibold text-gray-800 mb-4">Page Content</h2>
-          <div class="space-y-6">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">HTML Content</label>
-              <textarea
-                v-model="formData.htmlContent"
-                rows="6"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="Enter HTML content"
-              ></textarea>
+        <div v-show="activeTab === 'content'" class="p-6 space-y-6">
+          <div class="grid grid-cols-1 gap-8">
+            <div class="space-y-2">
+              <label class="text-sm font-medium text-gray-700">HTML</label>
+              <div class="relative">
+                <textarea
+                  v-model="formData.htmlContent"
+                  class="w-full h-64 px-4 py-3 font-mono text-sm bg-gray-50 rounded-lg border"
+                  placeholder="<div>Your HTML here</div>"
+                ></textarea>
+                <div class="absolute top-2 right-2 bg-gray-200 px-2 py-1 rounded text-xs">HTML</div>
+              </div>
             </div>
             
             <div>
@@ -168,67 +187,50 @@ const handleSubmit = async () => {
           </div>
         </div>
 
-        <!-- Publication Settings -->
-        <div class="p-6 border-b border-gray-200">
-          <h2 class="text-xl font-semibold text-gray-800 mb-4">Publication Settings</h2>
-          <label class="flex items-center">
-            <input
-              type="checkbox"
-              v-model="formData.isPublished"
-              class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-            />
-            <span class="ml-2 text-sm text-gray-700">Publish page immediately after creation</span>
-          </label>
+        <div v-show="activeTab === 'settings'" class="p-6">
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <label class="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                v-model="formData.isPublished"
+                class="w-5 h-5 text-indigo-600 rounded"
+              />
+              <span class="text-gray-700">Xuất bản ngay sau khi tạo</span>
+            </label>
+          </div>
         </div>
 
-        <!-- Form Actions -->
-        <div class="p-6 bg-gray-50 flex items-center justify-between">
-          <p class="text-sm text-gray-500">* Required fields</p>
+        <div class="p-6 bg-gray-50 rounded-b-xl flex items-center justify-between">
+          <p class="text-sm text-gray-500">* Trường bắt buộc</p>
           <button
             type="submit"
             :disabled="loading || !isFormValid"
-            class="inline-flex items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition"
           >
-            <span v-if="loading">
-              <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            <span v-if="loading" class="flex items-center">
+              <svg class="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                <!-- Loading spinner path -->
               </svg>
-              Creating...
+              Đang tạo...
             </span>
-            <span v-else>Create Landing Page</span>
+            <span v-else>Tạo Landing Page</span>
           </button>
         </div>
 
-        <!-- Status Messages -->
-        <div v-if="error || success" class="p-6 border-t border-gray-200">
-          <div v-if="error" class="p-4 bg-red-50 border border-red-200 rounded-md">
-            <div class="flex">
-              <div class="flex-shrink-0">
-                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                </svg>
-              </div>
-              <div class="ml-3">
-                <p class="text-sm text-red-700">{{ error }}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div v-if="success" class="p-4 bg-green-50 border border-green-200 rounded-md">
-            <div class="flex">
-              <div class="flex-shrink-0">
-                <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                </svg>
-              </div>
-              <div class="ml-3">
-                <p class="text-sm text-green-700">Landing page created successfully!</p>
-              </div>
-            </div>
-          </div>
+        <div v-if="error || success" class="p-4 mx-6 mb-6 rounded-lg" :class="{
+          'bg-red-50 border border-red-200': error,
+          'bg-green-50 border border-green-200': success
+        }">
+          <p :class="[
+            'text-sm',
+            error ? 'text-red-700' : 'text-green-700'
+          ]">
+            {{ error || 'Tạo landing page thành công!' }}
+          </p>
         </div>
       </form>
     </div>
   </div>
 </template>
+
+

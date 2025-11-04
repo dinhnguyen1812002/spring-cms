@@ -116,7 +116,7 @@
       <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div class="text-center">
           <p class="text-base text-gray-400">
-            © 2024 Company Name. All rights reserved.
+            © {{new Date().getFullYear()}} Ng-dev. All rights reserved.
           </p>
         </div>
       </div>

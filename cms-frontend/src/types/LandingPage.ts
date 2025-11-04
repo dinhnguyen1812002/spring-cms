@@ -8,6 +8,8 @@ export interface LandingPage {
     jsContent: string;
     version?: number;
     isPublished: boolean;
+    url:string;
+    createdAt: string;
   }
   // types/LandingPage.ts
 export interface CreateLandingPage {
